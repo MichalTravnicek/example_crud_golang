@@ -20,15 +20,14 @@ FROM build-stage AS run-test-stage
 RUN go test -v ./...
 
 # Deploy the application binary into a lean image
-FROM gcr.io/distroless/base-debian11 AS build-release-stage
+FROM alpine:3.20 AS build-release-stage
 
 WORKDIR /
 
 COPY --from=build-stage /example-crud-golang /example-crud-golang
-COPY wait-for-it.sh ./
+COPY wait-for-it.sh /
+RUN apk add --no-cache bash
 
 EXPOSE 8080
-
-USER nonroot:nonroot
 
 CMD ["/example-crud-golang"]

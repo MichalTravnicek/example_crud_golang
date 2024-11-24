@@ -3,7 +3,7 @@ networks:
     driver: bridge
 
 services:
-  example-crud-golang:
+  app:
     build: .
     restart: always
     ports:
@@ -12,7 +12,7 @@ services:
       - gorm-network
     depends_on:
       - "db"
-    # command: ["./wait-for-it.sh", "db:5432", "--", "/example-crud-golang"]
+    command: ["./wait-for-it.sh", "db:5432", "--", "/example-crud-golang"]
     environment: # Example ENV configuration
       APP_NAME: "example-crud-golang"
       LOG_LEVEL: "INFO"
