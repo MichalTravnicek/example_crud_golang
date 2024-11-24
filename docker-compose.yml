@@ -1,0 +1,40 @@
+networks:
+  gorm-network:
+    driver: bridge
+
+services:
+  example-crud-golang:
+    build: .
+    restart: always
+    ports:
+     - "8080:8080"
+    networks:
+      - gorm-network
+    depends_on:
+      - "db"
+    # command: ["./wait-for-it.sh", "db:5432", "--", "/example-crud-golang"]
+    environment: # Example ENV configuration
+      APP_NAME: "example-crud-golang"
+      LOG_LEVEL: "INFO"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "example"
+      POSTGRES_DB: "postgres"
+      POSTGRES_HOST: "db"
+      POSTGRES_PORT: "5432"
+      POSTGRES_SSL: "disable"
+  db:
+    image: postgres
+    restart: always
+    networks:
+      - gorm-network
+    environment:
+      POSTGRES_PASSWORD: example
+    # ports:
+    #   - 5432:5432 # Expose this port while running REST service locally
+  adminer:
+    image: adminer
+    networks:
+      - gorm-network
+    restart: always
+    ports:
+      - 8090:8080
