@@ -28,8 +28,6 @@ func init() {
 	host = os.Getenv("POSTGRES_HOST")
 	port = os.Getenv("POSTGRES_PORT")
 	ssl = os.Getenv("POSTGRES_SSL")
-	dbHandle = initDb()
-    log.Println(dbHandle)
 }
 
 func initDb() *gorm.DB{
@@ -42,6 +40,8 @@ func initDb() *gorm.DB{
 }
 
 func main() {
+    dbHandle = initDb()
+    log.Println(dbHandle)
     fmt.Println("Hello main")
     func() {
 		for {
