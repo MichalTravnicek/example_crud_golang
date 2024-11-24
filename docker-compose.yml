@@ -1,0 +1,31 @@
+networks:
+  gorm-network:
+    driver: bridge
+
+services:
+  app:
+    build: .
+    restart: always
+    ports:
+     - "8080:8080"
+    networks:
+      - gorm-network
+    depends_on:
+      - "db"
+    command: ["./wait-for-it.sh", "db:${POSTGRES_PORT}", "--", "/example-crud-golang"]
+    env_file: .env
+  db:
+    image: postgres
+    restart: always
+    networks:
+      - gorm-network
+    env_file: .env
+    # ports:
+    #   - ${POSTGRES_PORT}:${POSTGRES_PORT} # Expose this port while running REST service locally
+  adminer:
+    image: adminer
+    networks:
+      - gorm-network
+    restart: always
+    ports:
+      - 8090:8080
