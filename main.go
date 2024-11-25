@@ -100,7 +100,6 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
         r.HandleContext(c)
     })
 
-    // Inject the database into the handler
     r.POST("/users", func(c *gin.Context) {
         var user RestUser
 
