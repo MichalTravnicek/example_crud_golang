@@ -117,7 +117,8 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
         }
 
         if err := db.Create(&dbUser).Error; err != nil {            
-            if (strings.Contains(err.Error(),"UNIQUE constraint failed")){
+            if (strings.Contains(err.Error(),"UNIQUE constraint failed") ||
+                strings.Contains(err.Error(),"violates unique constraint")){
                 c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
                 return
             }
