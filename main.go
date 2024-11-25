@@ -3,13 +3,16 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
-	"time"
-	"github.com/google/uuid"
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
-	"gorm.io/driver/postgres"
 	"net/http"
+	"os"
+    "strings"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+    "gorm.io/gorm/clause"
 )
 
 const timeFormat = "2006-01-02T15:04:05+00:00"
@@ -49,9 +52,9 @@ func (DbUser) TableName() string {
 // DbUser represents a simple user model.
 type DbUser struct {
     ID    uint   `gorm:"primaryKey"`
-    UUID  uuid.UUID   `gorm:"type:uuid;unique_index"`
+    UUID  uuid.UUID   `gorm:"type:uuid;uniqueIndex"`
     Name  string `gorm:"type:varchar(150)"`
-    Email string `gorm:"type:varchar(150);unique_index" form:"email"`
+    Email string `gorm:"type:varchar(150);uniqueIndex" form:"email"`
     Birth time.Time
 }
 
@@ -79,12 +82,23 @@ func MapToDb(user RestUser) (DbUser, error) {
 
 func MapToRest(dbUser DbUser) RestUser{
     log.Printf("%+v\n", dbUser)
-    return RestUser{ID:dbUser.UUID.String(), Name: dbUser.Name, Email:dbUser.Email, Birth: dbUser.Birth.String()}
+    return RestUser{ID:dbUser.UUID.String(), Name: dbUser.Name, Email:dbUser.Email, Birth: dbUser.Birth.Format(timeFormat)}
 }
 
 // SetupRouter initializes the Gin engine with routes.
 func SetupRouter(db *gorm.DB) *gin.Engine {
     r := gin.Default()
+
+    r.GET("/:id", func(c *gin.Context) {
+        id := c.Param("id")
+        c.Request.URL.Path = "/users/" + id
+        r.HandleContext(c)
+    })
+
+    r.POST("/save", func(c *gin.Context) {
+        c.Request.URL.Path = "/users"
+        r.HandleContext(c)
+    })
 
     // Inject the database into the handler
     r.POST("/users", func(c *gin.Context) {
@@ -101,26 +115,35 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
             c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
             return 
         }
-        if err := db.Create(&dbUser).Error; err != nil {
+
+        if err := db.Create(&dbUser).Error; err != nil {            
+            if (strings.Contains(err.Error(),"UNIQUE constraint failed")){
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+            }
             c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
             return
         }
+
         c.JSON(http.StatusCreated, MapToRest(dbUser))
     })
 
     r.GET("/users/:id", func(c *gin.Context) {
         id := c.Param("id")
         dbUuid, err := uuid.Parse(id)
+
         if (err != nil){
             c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
             return
         }
+
         var user = DbUser{}
 
         if err := db.Where("UUID = ?", dbUuid).First(&user).Error; err != nil {
             c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
             return
         }
+
         c.JSON(http.StatusOK, MapToRest(user))
     })
 
@@ -128,6 +151,7 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
         var user RestUser
         id := c.Param("id")        
         dbUuid, err := uuid.Parse(id)
+
         if (err != nil){
             c.JSON(http.StatusBadRequest, err)
             return
@@ -144,25 +168,28 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
             return
         }
 
+        dbId := dbUser.ID
         dbUser, err = MapToDb(user)
+        dbUser.ID = dbId
+
+        db.Clauses(clause.OnConflict{
+            UpdateAll: true,
+          }).Create(&dbUser)
 
         if (err != nil){
             c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
             return
         }
 
-        if err := db.Save(&dbUser).Error; err != nil {
-            c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-            return
-        }
 		c.JSON(http.StatusOK, MapToRest(dbUser))
 	})
 
     r.DELETE("/users/:id", func(c *gin.Context) {
         id := c.Param("id")
         dbUuid, err := uuid.Parse(id)
+
         if (err != nil){
-            c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+            c.JSON(http.StatusBadRequest, err)
             return
         }
 
