@@ -11,8 +11,8 @@ Crud operations in Go with Gorm and Gin
    ```
    curl -X POST http://localhost:8080/save/ -d '{"id":"b05cc5a3-62d7-49ce-a094-f65a82caac5c","name":"Michal","email":"michal@michal.cz","date_of_birth":"2020-01-01T12:12:34+00:00"}
    ```
-   - Reponse:
-   ```
+   - Response:
+   ```JSON
    {
     "id": "b05cc5a3-62d7-49ce-a094-f65a82caac5c"
     "name": "Michal",
@@ -30,8 +30,8 @@ Crud operations in Go with Gorm and Gin
    curl localhost:8080/b05cc5a3-62d7-49ce-a094-f65a82caac5c
    ``` 
 
-   - Reponse:
-   ```
+   - Response:
+   ```JSON
    {
     "id": "b05cc5a3-62d7-49ce-a094-f65a82caac5c"
     "name": "Michal",
